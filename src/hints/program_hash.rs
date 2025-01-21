@@ -87,7 +87,7 @@ fn maybe_relocatable_to_field_element(
 /// Computes the Pedersen hash of a program.
 ///
 /// Reimplements this Python function:
-/// ```no-run
+/// ```text
 /// def compute_program_hash_chain(program: ProgramBase, bootloader_version=0):
 ///     builtin_list = [from_bytes(builtin.encode("ascii")) for builtin in program.builtins]
 ///     # The program header below is missing the data length, which is later added to the data_chain.

@@ -191,7 +191,7 @@ mod tests {
 
     use crate::hints::fact_topologies::FactTopology;
 
-    use crate::hints::types::{Task, TaskSpec};
+    use crate::hints::types::TaskSpec;
     use crate::hints::vars;
     use crate::{add_segments, define_segments, ids_data, vm};
 

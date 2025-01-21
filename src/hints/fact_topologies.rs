@@ -157,7 +157,7 @@ pub fn compute_fact_topologies<'a>(
 /// * `output_start`: Start of the output range for this fact topology.
 ///
 /// Reimplements the following Python code:
-/// ```no-run
+/// ```text
 ///     offset = 0
 ///     for i, page_size in enumerate(fact_topology.page_sizes):
 ///         output_builtin.add_page(
@@ -382,7 +382,7 @@ pub fn get_task_fact_topology(
     output_builtin: &mut OutputBuiltinRunner,
     output_runner_data: Option<OutputBuiltinState>,
 ) -> Result<FactTopology, FactTopologyError> {
-    if let Some(_) = task.as_any().downcast_ref::<RunProgramTask>() {
+    if task.as_any().downcast_ref::<RunProgramTask>().is_some() {
         let output_runner_data = output_runner_data.ok_or(FactTopologyError::Internal(
             "Output runner data not set for program task"
                 .to_string()

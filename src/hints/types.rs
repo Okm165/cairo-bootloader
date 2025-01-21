@@ -1,17 +1,13 @@
-use std::any::Any;
-use std::collections::HashMap;
-use std::path::PathBuf;
-
-use cairo_vm::serde::deserialize_program::Identifier;
 use cairo_vm::types::errors::program_errors::ProgramError;
 use cairo_vm::types::program::Program;
 use cairo_vm::vm::runners::cairo_pie::CairoPie;
 use cairo_vm::Felt252;
 use serde::Deserialize;
+use std::any::Any;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 pub type BootloaderVersion = u64;
-
-pub(crate) type ProgramIdentifiers = HashMap<String, Identifier>;
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct BootloaderConfig {

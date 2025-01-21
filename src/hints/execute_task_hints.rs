@@ -7,7 +7,7 @@ use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
 use cairo_vm::hint_processor::hint_processor_definition::{
     ExtensionData, HintExtension, HintProcessor, HintReference,
 };
-use cairo_vm::serde::deserialize_program::{ApTracking, Identifier};
+use cairo_vm::serde::deserialize_program::ApTracking;
 use cairo_vm::types::builtin_name::BuiltinName;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::program::Program;
@@ -24,7 +24,7 @@ use crate::hints::fact_topologies::{get_task_fact_topology, FactTopology};
 use crate::hints::load_cairo_pie::load_cairo_pie;
 use crate::hints::program_hash::compute_program_hash_chain;
 use crate::hints::program_loader::ProgramLoader;
-use crate::hints::types::{BootloaderVersion, ProgramIdentifiers, Task};
+use crate::hints::types::{BootloaderVersion, Task};
 use crate::hints::vars;
 use crate::TaskSpec;
 
@@ -344,39 +344,6 @@ pub fn write_return_builtins_hint(
     Ok(HashMap::new())
 }
 
-fn get_bootloader_identifiers(
-    exec_scopes: &ExecutionScopes,
-) -> Result<&ProgramIdentifiers, HintError> {
-    if let Some(bootloader_identifiers) =
-        exec_scopes.data[0].get(vars::BOOTLOADER_PROGRAM_IDENTIFIERS)
-    {
-        if let Some(program) = bootloader_identifiers.downcast_ref::<ProgramIdentifiers>() {
-            return Ok(program);
-        }
-    }
-
-    Err(HintError::VariableNotInScopeError(
-        vars::BOOTLOADER_PROGRAM_IDENTIFIERS
-            .to_string()
-            .into_boxed_str(),
-    ))
-}
-
-fn get_identifier(
-    identifiers: &HashMap<String, Identifier>,
-    name: &str,
-) -> Result<usize, HintError> {
-    if let Some(identifier) = identifiers.get(name) {
-        if let Some(pc) = identifier.pc {
-            return Ok(pc);
-        }
-    }
-
-    Err(HintError::VariableNotInScopeError(
-        name.to_string().into_boxed_str(),
-    ))
-}
-
 /*
 Implements hint:
 %{
@@ -564,11 +531,11 @@ mod util {
         output_builtin: &mut OutputBuiltinRunner,
         output_ptr: Relocatable,
     ) -> Result<Option<OutputBuiltinState>, HintError> {
-        let output_state = if let Some(_) = task.as_any().downcast_ref::<RunProgramTask>() {
+        let output_state = if task.as_any().downcast_ref::<RunProgramTask>().is_some() {
             let output_state = output_builtin.get_state();
             output_builtin.new_state(output_ptr.segment_index as usize, true);
             Ok(Some(output_state))
-        } else if let Some(_) = task.as_any().downcast_ref::<CairoPieTask>() {
+        } else if task.as_any().downcast_ref::<CairoPieTask>().is_some() {
             Ok(None)
         } else {
             Err(HintError::CustomHint(
@@ -581,27 +548,25 @@ mod util {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::hints::codes::EXECUTE_TASK_CALL_TASK;
+    use crate::{
+        add_segments, define_segments, ids_data, non_continuous_ids_data, run_hint, vm,
+        BootloaderHintProcessor,
+    };
     use assert_matches::assert_matches;
-    use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
-
     use cairo_vm::any_box;
+    use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
     use cairo_vm::hint_processor::hint_processor_definition::HintProcessorLogic;
+    use cairo_vm::serde::deserialize_program::Identifier;
     use cairo_vm::types::errors::math_errors::MathError;
     use cairo_vm::types::program::Program;
     use cairo_vm::types::relocatable::MaybeRelocatable;
     use cairo_vm::vm::runners::builtin_runner::BuiltinRunner;
     use cairo_vm::vm::runners::cairo_pie::{BuiltinAdditionalData, PublicMemoryPage};
-
     use rstest::{fixture, rstest};
 
-    use crate::hints::codes::EXECUTE_TASK_CALL_TASK;
-
-    use crate::{
-        add_segments, define_segments, ids_data, non_continuous_ids_data, run_hint, vm,
-        BootloaderHintProcessor,
-    };
-
-    use super::*;
+    pub(crate) type ProgramIdentifiers = HashMap<String, Identifier>;
 
     #[rstest]
     fn test_allocate_program_data_segment() {
