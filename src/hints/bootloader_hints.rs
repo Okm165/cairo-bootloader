@@ -450,7 +450,8 @@ mod tests {
     };
     use crate::hints::types::{BootloaderConfig, SimpleBootloaderInput};
     use crate::{
-        add_segments, define_segments, ids_data, run_hint, vm, MinimalBootloaderHintProcessor,
+        add_segments, define_segments, hints::MinimalBootloaderHintProcessor, ids_data, run_hint,
+        vm,
     };
     use assert_matches::assert_matches;
     use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;

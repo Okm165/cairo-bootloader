@@ -4,15 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.3.10", features = ["derive"] }
 cairo-vm = { git = "https://github.com/zksecurity/cairo-vm.git", features = [ "extensive_hints", "clap" ], rev = "3cfcd1d035a4f6951337e6f4cc26014a0aa7e47e" }
+clap = { version = "4.3.10", features = ["derive"] }
 num-traits = "0.2.19"
 serde = { version = "1.0.202", features = ["derive"] }
 serde_json = "1.0.117"
 starknet-crypto = "0.6.2"
 starknet-types-core = "0.1.2"
-thiserror = "1.0.61"
 thiserror-no-std = "2.0.2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 assert_matches = "1.5.0"

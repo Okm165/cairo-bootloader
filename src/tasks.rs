@@ -1,11 +1,13 @@
-use crate::{CairoPieTask, RunProgramTask, TaskSpec};
+use crate::hints::types::{CairoPieTask, RunProgramTask, TaskSpec};
+use crate::hints::{BootloaderInput, BOOTLOADER_INPUT};
 use cairo_vm::types::errors::program_errors::ProgramError;
+use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::program::Program;
 use cairo_vm::vm::runners::cairo_pie::CairoPie;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::PathBuf;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror_no_std::Error, Debug)]
 pub enum BootloaderTaskError {
     #[error("Failed to read program: {0}")]
     Program(#[from] ProgramError),
@@ -15,9 +17,9 @@ pub enum BootloaderTaskError {
 }
 
 pub fn make_bootloader_tasks(
-    programs: Option<&[&Path]>,
+    programs: Option<&[PathBuf]>,
     program_inputs: Option<&[HashMap<String, serde_json::Value>]>,
-    pies: Option<&[&Path]>,
+    pies: Option<&[PathBuf]>,
 ) -> Result<Vec<TaskSpec>, BootloaderTaskError> {
     let mut tasks: Vec<TaskSpec> = Vec::new();
     if let (Some(programs), Some(program_inputs)) = (programs, program_inputs) {
@@ -54,4 +56,12 @@ pub fn make_bootloader_tasks(
     }
 
     Ok(tasks)
+}
+
+/// Inserts the bootloader input in the execution scopes.
+pub fn insert_bootloader_input(
+    exec_scopes: &mut ExecutionScopes,
+    bootloader_input: BootloaderInput,
+) {
+    exec_scopes.insert_value(BOOTLOADER_INPUT, bootloader_input);
 }

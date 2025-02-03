@@ -24,13 +24,13 @@ use crate::hints::fact_topologies::{get_task_fact_topology, FactTopology};
 use crate::hints::load_cairo_pie::load_cairo_pie;
 use crate::hints::program_hash::compute_program_hash_chain;
 use crate::hints::program_loader::ProgramLoader;
+use crate::hints::types::TaskSpec;
 use crate::hints::types::{BootloaderVersion, Task};
 use crate::hints::vars;
-use crate::TaskSpec;
 
 use super::types::{CairoPieTask, RunProgramTask};
 
-fn get_stripped_program_from_task(task: &Box<dyn Task>) -> Result<StrippedProgram, HintError> {
+fn get_stripped_program_from_task(task: &dyn Task) -> Result<StrippedProgram, HintError> {
     task.get_program()
         .map_err(|e| HintError::CustomHint(e.to_string().into_boxed_str()))
         .and_then(|p| {
@@ -39,7 +39,7 @@ fn get_stripped_program_from_task(task: &Box<dyn Task>) -> Result<StrippedProgra
         })
 }
 
-fn get_program_from_task(task: &Box<dyn Task>) -> Result<Program, HintError> {
+fn get_program_from_task(task: Box<dyn Task>) -> Result<Program, HintError> {
     task.get_program()
         .map_err(|e| HintError::CustomHint(e.to_string().into_boxed_str()))
 }
@@ -101,7 +101,7 @@ pub fn load_program_hint(
 ) -> Result<HintExtension, HintError> {
     let program_data_base: Relocatable = exec_scopes.get(vars::PROGRAM_DATA_BASE)?;
     let task = get_task_from_exec_scopes(exec_scopes)?;
-    let program = get_stripped_program_from_task(&task)?;
+    let program = get_stripped_program_from_task(task.as_ref())?;
 
     let program_header_ptr = get_ptr_from_var_name("program_header", vm, ids_data, ap_tracking)?;
 
@@ -157,7 +157,7 @@ pub fn append_fact_topologies(
 
     let output_builtin = vm.get_output_builtin_mut()?;
     let fact_topology =
-        get_task_fact_topology(output_size, &task, output_builtin, output_runner_data)
+        get_task_fact_topology(output_size, task, output_builtin, output_runner_data)
             .map_err(Into::<HintError>::into)?;
     exec_scopes
         .get_mut_ref::<Vec<FactTopology>>(vars::FACT_TOPOLOGIES)?
@@ -180,7 +180,7 @@ pub fn validate_hash(
     ap_tracking: &ApTracking,
 ) -> Result<HintExtension, HintError> {
     let task = get_task_from_exec_scopes(exec_scopes)?;
-    let program = get_stripped_program_from_task(&task)?;
+    let program = get_stripped_program_from_task(task.as_ref())?;
 
     let output_ptr = get_ptr_from_var_name("output_ptr", vm, ids_data, ap_tracking)?;
     let program_hash_ptr = (output_ptr + 1)?;
@@ -253,7 +253,7 @@ fn write_return_builtins(
     used_builtins: &[BuiltinName],
     used_builtins_addr: Relocatable,
     pre_execution_builtins_addr: Relocatable,
-    task: &Box<dyn Task>,
+    task: Box<dyn Task>,
 ) -> Result<HintExtension, HintError> {
     let mut used_builtin_offset: usize = 0;
     for (index, builtin) in ALL_BUILTINS.iter().enumerate() {
@@ -311,7 +311,7 @@ pub fn write_return_builtins_hint(
     let n_builtins: usize = exec_scopes.get(vars::N_BUILTINS)?;
 
     // builtins = task.get_program().builtins
-    let program = get_stripped_program_from_task(&task)?;
+    let program = get_stripped_program_from_task(task.as_ref())?;
     let builtins = &program.builtins;
 
     // write_return_builtins(
@@ -331,7 +331,7 @@ pub fn write_return_builtins_hint(
         builtins,
         used_builtins_addr,
         pre_execution_builtins_addr,
-        &task,
+        task,
     )?;
 
     // vm_enter_scope({'n_selected_builtins': n_builtins})
@@ -392,7 +392,9 @@ pub fn call_task(
     // assert isinstance(task, Task)
     let task = get_task_from_exec_scopes(exec_scopes)?;
     // n_builtins = len(task.get_program().builtins)
-    let n_builtins = get_stripped_program_from_task(&task)?.builtins.len();
+    let n_builtins = get_stripped_program_from_task(task.as_ref())?
+        .builtins
+        .len();
 
     let mut new_task_locals = HashMap::new();
 
@@ -448,7 +450,7 @@ pub fn call_task(
     // The output field is the first one in the BuiltinData struct
     let output_ptr = vm.get_relocatable((pre_execution_builtin_ptrs_addr + 0)?)?;
     let output_runner_data =
-        util::prepare_output_runner(&task, vm.get_output_builtin_mut()?, output_ptr)?;
+        util::prepare_output_runner(task, vm.get_output_builtin_mut()?, output_ptr)?;
 
     exec_scopes.insert_value(vars::N_BUILTINS, n_builtins);
     exec_scopes.insert_value(vars::OUTPUT_RUNNER_DATA, output_runner_data);
@@ -464,7 +466,7 @@ fn vm_load_program(
 ) -> Result<HashMap<Relocatable, ExtensionData>, HintError> {
     let task_program_address: Relocatable = exec_scopes.get(vars::PROGRAM_ADDRESS).unwrap();
     let task = get_task_from_exec_scopes(exec_scopes)?;
-    let task_program = get_program_from_task(&task)?;
+    let task_program = get_program_from_task(task)?;
 
     let mut task_program_compiled_hints = HashMap::new();
     let task_program_hints = task_program.get_hints();
@@ -487,7 +489,7 @@ fn vm_load_program(
                 hint.code.as_str(),
                 &hint.flow_tracking_data.ap_tracking,
                 &hint.flow_tracking_data.reference_ids,
-                &task_program_references,
+                task_program_references,
             )?;
             task_program_compiled_hints
                 .entry(new_hint_pc)
@@ -524,14 +526,14 @@ mod util {
     /// Prepares the output builtin if the type of task is Task, so that pages of the inner program
     /// will be recorded separately.
     /// If the type of task is CairoPie, nothing should be done, as the program does not contain
-    /// hints that may affect the output builtin.
+    /// hints that may affecthints::types:: the output builtin.
     /// The return value of this function should be later passed to get_task_fact_topology().
     pub(crate) fn prepare_output_runner(
-        task: &Box<dyn Task>,
+        task: Box<dyn Task>,
         output_builtin: &mut OutputBuiltinRunner,
         output_ptr: Relocatable,
     ) -> Result<Option<OutputBuiltinState>, HintError> {
-        let output_state = if task.as_any().downcast_ref::<RunProgramTask>().is_some() {
+        if task.as_any().downcast_ref::<RunProgramTask>().is_some() {
             let output_state = output_builtin.get_state();
             output_builtin.new_state(output_ptr.segment_index as usize, true);
             Ok(Some(output_state))
@@ -541,8 +543,7 @@ mod util {
             Err(HintError::CustomHint(
                 "Unexpected task type".to_string().into_boxed_str(),
             ))
-        };
-        output_state
+        }
     }
 }
 
@@ -551,8 +552,8 @@ mod tests {
     use super::*;
     use crate::hints::codes::EXECUTE_TASK_CALL_TASK;
     use crate::{
-        add_segments, define_segments, ids_data, non_continuous_ids_data, run_hint, vm,
-        BootloaderHintProcessor,
+        add_segments, define_segments, hints::BootloaderHintProcessor, ids_data,
+        non_continuous_ids_data, run_hint, vm,
     };
     use assert_matches::assert_matches;
     use cairo_vm::any_box;

@@ -83,7 +83,7 @@ macro_rules! define_segments {
 macro_rules! run_hint {
     ($vm:expr, $ids_data:expr, $hint_code:expr, $exec_scopes:expr, $constants:expr) => {{
         let hint_data = HintProcessorData::new_default($hint_code.to_string(), $ids_data);
-        let mut hint_processor = $crate::MinimalBootloaderHintProcessor::new();
+        let mut hint_processor = $crate::hints::MinimalBootloaderHintProcessor::new();
         hint_processor.execute_hint_extensive(
             &mut $vm,
             $exec_scopes,
@@ -96,7 +96,7 @@ macro_rules! run_hint {
             cairo_vm::stdlib::string::ToString::to_string($hint_code),
             $ids_data,
         );
-        let mut hint_processor = $crate::MinimalBootloaderHintProcessor::new();
+        let mut hint_processor = $crate::hints::MinimalBootloaderHintProcessor::new();
         hint_processor.execute_hint_extensive(
             &mut $vm,
             $exec_scopes,
@@ -109,7 +109,7 @@ macro_rules! run_hint {
             $crate::stdlib::string::ToString::to_string($hint_code),
             $ids_data,
         );
-        let mut hint_processor = $crate::MinimalBootloaderHintProcessor::new();
+        let mut hint_processor = $crate::hints::MinimalBootloaderHintProcessor::new();
         hint_processor.execute_hint_extensive(
             &mut $vm,
             exec_scopes_ref!(),

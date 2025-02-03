@@ -9,7 +9,7 @@ mod program_hash;
 mod program_loader;
 mod select_builtins;
 mod simple_bootloader_hints;
-mod types;
+pub mod types;
 mod vars;
 
 pub use hint_processors::{BootloaderHintProcessor, MinimalBootloaderHintProcessor};
