@@ -1,5 +1,4 @@
-use cairo_vm::types::errors::program_errors::ProgramError;
-use cairo_vm::types::program::Program;
+use cairo_vm::types::{errors::program_errors::ProgramError, program::Program};
 
 pub use crate::hints::*;
 

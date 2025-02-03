@@ -1,11 +1,11 @@
-use cairo_vm::types::errors::program_errors::ProgramError;
-use cairo_vm::types::program::Program;
-use cairo_vm::vm::runners::cairo_pie::CairoPie;
-use cairo_vm::Felt252;
+use std::{any::Any, collections::HashMap, path::PathBuf};
+
+use cairo_vm::{
+    types::{errors::program_errors::ProgramError, program::Program},
+    vm::runners::cairo_pie::CairoPie,
+    Felt252,
+};
 use serde::Deserialize;
-use std::any::Any;
-use std::collections::HashMap;
-use std::path::PathBuf;
 
 pub type BootloaderVersion = u64;
 
@@ -79,11 +79,7 @@ impl Task for RunProgramTask {
 }
 
 impl RunProgramTask {
-    pub fn new(
-        program: Program,
-        program_input: HashMap<String, serde_json::Value>,
-        use_poseidon: bool,
-    ) -> Self {
+    pub fn new(program: Program, program_input: HashMap<String, serde_json::Value>, use_poseidon: bool) -> Self {
         Self {
             program,
             program_input,
@@ -106,9 +102,7 @@ pub struct CairoPieTask {
 
 impl Task for CairoPieTask {
     fn get_program(&self) -> Result<Program, ProgramError> {
-        Ok(Program::from_stripped_program(
-            &self.cairo_pie.metadata.program,
-        ))
+        Ok(Program::from_stripped_program(&self.cairo_pie.metadata.program))
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -118,10 +112,7 @@ impl Task for CairoPieTask {
 
 impl CairoPieTask {
     pub fn new(cairo_pie: CairoPie, use_poseidon: bool) -> Self {
-        Self {
-            cairo_pie,
-            use_poseidon,
-        }
+        Self { cairo_pie, use_poseidon }
     }
 }
 

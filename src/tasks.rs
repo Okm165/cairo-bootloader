@@ -1,11 +1,14 @@
-use crate::hints::types::{CairoPieTask, RunProgramTask, TaskSpec};
-use crate::hints::{BootloaderInput, BOOTLOADER_INPUT};
-use cairo_vm::types::errors::program_errors::ProgramError;
-use cairo_vm::types::exec_scope::ExecutionScopes;
-use cairo_vm::types::program::Program;
-use cairo_vm::vm::runners::cairo_pie::CairoPie;
-use std::collections::HashMap;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
+
+use cairo_vm::{
+    types::{errors::program_errors::ProgramError, exec_scope::ExecutionScopes, program::Program},
+    vm::runners::cairo_pie::CairoPie,
+};
+
+use crate::hints::{
+    types::{CairoPieTask, RunProgramTask, TaskSpec},
+    BootloaderInput, BOOTLOADER_INPUT,
+};
 
 #[derive(thiserror_no_std::Error, Debug)]
 pub enum BootloaderTaskError {
@@ -29,39 +32,35 @@ pub fn make_bootloader_tasks(
             "The length of programs and program_inputs must be equal"
         );
 
-        programs.iter().zip(program_inputs.iter()).try_for_each(
-            |(program_file, program_input)| -> Result<(), BootloaderTaskError> {
-                let program = Program::from_file(program_file, Some("main"))
-                    .map_err(BootloaderTaskError::Program)?;
+        programs
+            .iter()
+            .zip(program_inputs.iter())
+            .try_for_each(|(program_file, program_input)| -> Result<(), BootloaderTaskError> {
+                let program = Program::from_file(program_file, Some("main")).map_err(BootloaderTaskError::Program)?;
                 tasks.push(TaskSpec::RunProgram(RunProgramTask {
                     program,
                     program_input: program_input.clone(),
                     use_poseidon: false,
                 }));
                 Ok(())
-            },
-        )?;
+            })?;
     }
 
     if let Some(pies) = pies {
-        pies.iter()
-            .try_for_each(|pie| -> Result<(), BootloaderTaskError> {
-                let cairo_pie = CairoPie::read_zip_file(pie).map_err(BootloaderTaskError::Pie)?;
-                tasks.push(TaskSpec::CairoPieTask(CairoPieTask {
-                    cairo_pie,
-                    use_poseidon: false,
-                }));
-                Ok(())
-            })?;
+        pies.iter().try_for_each(|pie| -> Result<(), BootloaderTaskError> {
+            let cairo_pie = CairoPie::read_zip_file(pie).map_err(BootloaderTaskError::Pie)?;
+            tasks.push(TaskSpec::CairoPieTask(CairoPieTask {
+                cairo_pie,
+                use_poseidon: false,
+            }));
+            Ok(())
+        })?;
     }
 
     Ok(tasks)
 }
 
 /// Inserts the bootloader input in the execution scopes.
-pub fn insert_bootloader_input(
-    exec_scopes: &mut ExecutionScopes,
-    bootloader_input: BootloaderInput,
-) {
+pub fn insert_bootloader_input(exec_scopes: &mut ExecutionScopes, bootloader_input: BootloaderInput) {
     exec_scopes.insert_value(BOOTLOADER_INPUT, bootloader_input);
 }

@@ -1,21 +1,19 @@
-use cairo_vm::types::builtin_name::BuiltinName;
-use std::collections::HashMap;
-use std::fs::File;
-use std::path::Path;
+use std::{collections::HashMap, fs::File, path::Path};
 
-use cairo_vm::types::errors::math_errors::MathError;
-use cairo_vm::types::relocatable::Relocatable;
-use cairo_vm::vm::errors::hint_errors::HintError;
-use cairo_vm::vm::errors::runner_errors::RunnerError;
-use cairo_vm::vm::runners::builtin_runner::{OutputBuiltinRunner, OutputBuiltinState};
-use cairo_vm::vm::runners::cairo_pie::{
-    BuiltinAdditionalData, OutputBuiltinAdditionalData, Pages, PublicMemoryPage,
+use cairo_vm::{
+    types::{builtin_name::BuiltinName, errors::math_errors::MathError, relocatable::Relocatable},
+    vm::{
+        errors::{hint_errors::HintError, runner_errors::RunnerError},
+        runners::{
+            builtin_runner::{OutputBuiltinRunner, OutputBuiltinState},
+            cairo_pie::{BuiltinAdditionalData, OutputBuiltinAdditionalData, Pages, PublicMemoryPage},
+        },
+    },
 };
 use serde::Serialize;
 
-use crate::hints::types::{PackedOutput, Task};
-
 use super::types::{CairoPieTask, RunProgramTask};
+use crate::hints::types::{PackedOutput, Task};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct FactTopology {
@@ -55,9 +53,7 @@ pub enum TreeStructureError {
     #[error("Invalid tree structure specified in the gps_fact_topology attribute")]
     InvalidTreeStructure,
 
-    #[error(
-        "Additional pages cannot be used since the gps_fact_topology attribute is not specified"
-    )]
+    #[error("Additional pages cannot be used since the gps_fact_topology attribute is not specified")]
     CannotUseAdditionalPages,
 }
 
@@ -92,9 +88,7 @@ impl From<FactTopologyError> for HintError {
     fn from(value: FactTopologyError) -> Self {
         match value {
             FactTopologyError::Math(e) => HintError::Math(e),
-            FactTopologyError::WrongNumberOfFactTopologies(_, _) => {
-                HintError::AssertionFailed(value.to_string().into_boxed_str())
-            }
+            FactTopologyError::WrongNumberOfFactTopologies(..) => HintError::AssertionFailed(value.to_string().into_boxed_str()),
             _ => HintError::CustomHint(value.to_string().into_boxed_str()),
         }
     }
@@ -139,9 +133,7 @@ pub fn compute_fact_topologies<'a>(
                 plain_fact_topologies.push(fact_topology);
             }
             PackedOutput::Composite(_) => {
-                return Err(FactTopologyError::CompositePackedOutputNotSupported(
-                    packed_output.clone(),
-                ));
+                return Err(FactTopologyError::CompositePackedOutputNotSupported(packed_output.clone()));
             }
         }
     }
@@ -229,12 +221,7 @@ pub fn configure_fact_topologies<FT: AsRef<FactTopology>>(
             // Skip bootloader output for each task
             *output_start = (*output_start + 2usize)?;
 
-            current_page_id += add_consecutive_output_pages(
-                fact_topology.as_ref(),
-                output_builtin,
-                current_page_id,
-                *output_start,
-            )?;
+            current_page_id += add_consecutive_output_pages(fact_topology.as_ref(), output_builtin, current_page_id, *output_start)?;
             let total_page_sizes: usize = fact_topology.as_ref().page_sizes.iter().sum();
             *output_start = (*output_start + total_page_sizes)?;
         }
@@ -316,10 +303,7 @@ fn get_page_sizes_from_pages(output_size: usize, pages: &Pages) -> Result<Vec<us
             }
             page0_size = page.start;
         } else if page.start != expected_page_start {
-            return Err(PageError::UnexpectedPageStart(
-                expected_page_start,
-                page.start,
-            ));
+            return Err(PageError::UnexpectedPageStart(expected_page_start, page.start));
         }
 
         page_sizes[index + 1] = page.size;
@@ -361,11 +345,7 @@ fn get_program_task_fact_topology(
         BuiltinAdditionalData::Output(data) => data,
         other => {
             return Err(FactTopologyError::Internal(
-                format!(
-                    "Additional data of output builtin is not of the expected type: {:?}",
-                    other
-                )
-                .into_boxed_str(),
+                format!("Additional data of output builtin is not of the expected type: {:?}", other).into_boxed_str(),
             ))
         }
     };
@@ -383,25 +363,17 @@ pub fn get_task_fact_topology(
 ) -> Result<FactTopology, FactTopologyError> {
     if task.as_any().downcast_ref::<RunProgramTask>().is_some() {
         let output_runner_data = output_runner_data.ok_or(FactTopologyError::Internal(
-            "Output runner data not set for program task"
-                .to_string()
-                .into_boxed_str(),
+            "Output runner data not set for program task".to_string().into_boxed_str(),
         ))?;
         get_program_task_fact_topology(output_size, output_builtin, output_runner_data)
     } else if let Some(cairo_pie_task) = task.as_any().downcast_ref::<CairoPieTask>() {
         if output_runner_data.is_some() {
             return Err(FactTopologyError::Internal(
-                "Output runner data set for Cairo PIE task"
-                    .to_string()
-                    .into_boxed_str(),
+                "Output runner data set for Cairo PIE task".to_string().into_boxed_str(),
             ));
         }
         let additional_data = {
-            let additional_data = cairo_pie_task
-                .cairo_pie
-                .additional_data
-                .0
-                .get(&BuiltinName::output);
+            let additional_data = cairo_pie_task.cairo_pie.additional_data.0.get(&BuiltinName::output);
             if let Some(additional_data) = additional_data {
                 match additional_data {
                     BuiltinAdditionalData::Output(output_data) => output_data,
@@ -420,9 +392,7 @@ pub fn get_task_fact_topology(
 
         get_fact_topology_from_additional_data(output_size, additional_data)
     } else {
-        Err(FactTopologyError::Internal(
-            "Unexpected task type".to_string().into_boxed_str(),
-        ))
+        Err(FactTopologyError::Internal("Unexpected task type".to_string().into_boxed_str()))
     }
 }
 
@@ -430,10 +400,7 @@ pub fn get_task_fact_topology(
 ///
 /// * `path`: File path.
 /// * `fact_topologies`: Fact topologies to write.
-pub fn write_to_fact_topologies_file<FT: AsRef<FactTopology>>(
-    path: &Path,
-    fact_topologies: &[FT],
-) -> Result<(), WriteFactTopologiesError> {
+pub fn write_to_fact_topologies_file<FT: AsRef<FactTopology>>(path: &Path, fact_topologies: &[FT]) -> Result<(), WriteFactTopologiesError> {
     let mut file = File::create(path)?;
     let fact_topology_file = FactTopologyFile {
         fact_topologies: fact_topologies.iter().map(|ft| ft.as_ref()).collect(),
@@ -446,10 +413,10 @@ pub fn write_to_fact_topologies_file<FT: AsRef<FactTopology>>(
 mod tests {
     use std::collections::HashMap;
 
-    use crate::hints::types::CompositePackedOutput;
     use rstest::{fixture, rstest};
 
     use super::*;
+    use crate::hints::types::CompositePackedOutput;
 
     #[fixture]
     fn packed_outputs() -> Vec<PackedOutput> {
@@ -479,12 +446,8 @@ mod tests {
     }
 
     #[rstest]
-    fn test_compute_fact_topologies(
-        packed_outputs: Vec<PackedOutput>,
-        fact_topologies: Vec<FactTopology>,
-    ) {
-        let plain_fact_topologies = compute_fact_topologies(&packed_outputs, &fact_topologies)
-            .expect("Failed to compute fact topologies");
+    fn test_compute_fact_topologies(packed_outputs: Vec<PackedOutput>, fact_topologies: Vec<FactTopology>) {
+        let plain_fact_topologies = compute_fact_topologies(&packed_outputs, &fact_topologies).expect("Failed to compute fact topologies");
         for (topology, plain_topology) in std::iter::zip(&fact_topologies, plain_fact_topologies) {
             assert_eq!(topology, plain_topology);
         }
@@ -499,10 +462,7 @@ mod tests {
             page_sizes: vec![],
         }];
         let result = compute_fact_topologies(&packed_outputs, &fact_topologies);
-        assert!(matches!(
-            result,
-            Err(FactTopologyError::CompositePackedOutputNotSupported(_))
-        ));
+        assert!(matches!(result, Err(FactTopologyError::CompositePackedOutputNotSupported(_))));
     }
 
     #[test]
@@ -530,13 +490,8 @@ mod tests {
             offset: 10,
         };
 
-        let result = add_consecutive_output_pages(
-            &fact_topology,
-            &mut output_builtin,
-            page_id,
-            output_start,
-        )
-        .expect("Adding consecutive output pages failed unexpectedly");
+        let result = add_consecutive_output_pages(&fact_topology, &mut output_builtin, page_id, output_start)
+            .expect("Adding consecutive output pages failed unexpectedly");
         assert_eq!(result, fact_topology.page_sizes.len());
 
         let output_builtin_state = output_builtin.get_state();
@@ -558,13 +513,8 @@ mod tests {
             offset: 10,
         };
 
-        let result = configure_fact_topologies(
-            &fact_topologies,
-            &mut output_start,
-            &mut output_builtin,
-            true,
-        )
-        .expect("Configuring fact topologies failed unexpectedly");
+        let result = configure_fact_topologies(&fact_topologies, &mut output_start, &mut output_builtin, true)
+            .expect("Configuring fact topologies failed unexpectedly");
         assert_eq!(result, ());
 
         let output_builtin_state = output_builtin.get_state();
@@ -587,13 +537,8 @@ mod tests {
             offset: 10,
         };
 
-        let result = configure_fact_topologies(
-            &fact_topologies,
-            &mut output_start,
-            &mut output_builtin,
-            false,
-        )
-        .expect("Configuring fact topologies failed unexpectedly");
+        let result = configure_fact_topologies(&fact_topologies, &mut output_start, &mut output_builtin, false)
+            .expect("Configuring fact topologies failed unexpectedly");
 
         assert_eq!(result, ());
 
@@ -621,14 +566,10 @@ mod tests {
 
         let output_builtin_data = OutputBuiltinAdditionalData {
             pages: HashMap::new(),
-            attributes: HashMap::from([(
-                GPS_FACT_TOPOLOGY.to_string(),
-                expected_tree_structure.clone(),
-            )]),
+            attributes: HashMap::from([(GPS_FACT_TOPOLOGY.to_string(), expected_tree_structure.clone())]),
         };
 
-        let tree_structure = get_tree_structure_from_output_data(&output_builtin_data)
-            .expect("Failed to get tree structure");
+        let tree_structure = get_tree_structure_from_output_data(&output_builtin_data).expect("Failed to get tree structure");
         assert_eq!(tree_structure, expected_tree_structure);
     }
 
@@ -639,8 +580,7 @@ mod tests {
             attributes: HashMap::new(),
         };
 
-        let tree_structure = get_tree_structure_from_output_data(&output_builtin_data)
-            .expect("Failed to get tree structure");
+        let tree_structure = get_tree_structure_from_output_data(&output_builtin_data).expect("Failed to get tree structure");
         assert_eq!(tree_structure, vec![1, 0]);
     }
 
@@ -655,10 +595,7 @@ mod tests {
         };
 
         let result = get_tree_structure_from_output_data(&output_builtin_data);
-        assert!(matches!(
-            result,
-            Err(TreeStructureError::InvalidTreeStructure)
-        ));
+        assert!(matches!(result, Err(TreeStructureError::InvalidTreeStructure)));
     }
 
     #[test]
@@ -669,10 +606,7 @@ mod tests {
         };
 
         let result = get_tree_structure_from_output_data(&output_builtin_data);
-        assert!(matches!(
-            result,
-            Err(TreeStructureError::CannotUseAdditionalPages)
-        ));
+        assert!(matches!(result, Err(TreeStructureError::CannotUseAdditionalPages)));
     }
 
     #[test]
@@ -683,16 +617,14 @@ mod tests {
             (2, PublicMemoryPage { start: 7, size: 3 }),
         ]);
 
-        let page_sizes =
-            get_page_sizes_from_pages(output_size, &pages).expect("Could not compute page sizes");
+        let page_sizes = get_page_sizes_from_pages(output_size, &pages).expect("Could not compute page sizes");
         assert_eq!(page_sizes, vec![0, 7, 3]);
     }
 
     #[test]
     fn test_get_page_sizes_missing() {
         let output_size = 10usize;
-        let page_sizes = get_page_sizes_from_pages(output_size, &HashMap::new())
-            .expect("Could not compute page sizes");
+        let page_sizes = get_page_sizes_from_pages(output_size, &HashMap::new()).expect("Could not compute page sizes");
         assert_eq!(page_sizes, vec![output_size]);
     }
 

@@ -14,8 +14,6 @@ mod vars;
 
 pub use hint_processors::{BootloaderHintProcessor, MinimalBootloaderHintProcessor};
 pub use types::{
-    BootloaderConfig, BootloaderInput, CairoPiePath, CairoPieTask, PackedOutput, RunProgramTask,
-    SimpleBootloaderInput, Task, TaskSpec,
+    BootloaderConfig, BootloaderInput, CairoPiePath, CairoPieTask, PackedOutput, RunProgramTask, SimpleBootloaderInput, Task, TaskSpec,
 };
-
 pub use vars::BOOTLOADER_INPUT;

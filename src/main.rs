@@ -1,12 +1,18 @@
+use cairo_vm::{
+    cairo_run,
+    cairo_run::cairo_run_program_with_initial_scope,
+    types::{exec_scope::ExecutionScopes, layout_name::LayoutName},
+    Felt252,
+};
+use clap::{Parser, ValueHint};
+use error::Error;
+use tasks::{insert_bootloader_input, make_bootloader_tasks};
+use tracing::debug;
+
 use crate::{
     bootloaders::load_bootloader,
-    hints::{
-        BootloaderConfig, BootloaderHintProcessor, BootloaderInput, PackedOutput,
-        SimpleBootloaderInput,
-    },
+    hints::{BootloaderConfig, BootloaderHintProcessor, BootloaderInput, PackedOutput, SimpleBootloaderInput},
 };
-use cairo_vm::cairo_run::cairo_run_program_with_initial_scope;
-use error::Error;
 
 pub mod bootloaders;
 pub mod error;
@@ -16,15 +22,7 @@ pub mod tasks;
 #[cfg(test)]
 pub mod macros;
 
-use cairo_vm::{
-    cairo_run,
-    types::{exec_scope::ExecutionScopes, layout_name::LayoutName},
-    Felt252,
-};
-use clap::{Parser, ValueHint};
 use std::path::PathBuf;
-use tasks::{insert_bootloader_input, make_bootloader_tasks};
-use tracing::debug;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -32,7 +30,7 @@ pub struct RunBootloaderArgs {
     #[clap(long = "cairo_pies", value_hint=ValueHint::FilePath, value_delimiter = ' ', num_args = 1..)]
     pub cairo_pies: Option<Vec<PathBuf>>,
 
-    #[clap(long = "layout", default_value = "starknet_with_keccak", value_enum)]
+    #[clap(long = "layout", default_value = "all_cairo", value_enum)]
     pub layout: LayoutName,
 
     #[structopt(long = "secure_run")]
@@ -64,7 +62,7 @@ fn main() -> Result<(), Error> {
         trace_enabled: true,
         relocate_mem: true,
         layout: args.layout,
-        proof_mode: true,
+        proof_mode: false,
         secure_run: args.secure_run,
         allow_missing_builtins: args.allow_missing_builtins,
         ..Default::default()
@@ -94,12 +92,7 @@ fn main() -> Result<(), Error> {
     let bootloader_program = load_bootloader()?;
 
     let mut hint_processor = BootloaderHintProcessor::new();
-    let cairo_runner = cairo_run_program_with_initial_scope(
-        &bootloader_program,
-        &cairo_run_config,
-        &mut hint_processor,
-        exec_scopes,
-    )?;
+    let cairo_runner = cairo_run_program_with_initial_scope(&bootloader_program, &cairo_run_config, &mut hint_processor, exec_scopes)?;
 
     debug!("{:?}", cairo_runner.get_execution_resources());
 
