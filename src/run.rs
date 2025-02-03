@@ -27,14 +27,11 @@ pub struct RunBootloaderArgs {
     #[clap(long = "cairo_pie_output")]
     pub cairo_pie_output: Option<PathBuf>,
 
-    #[clap(long = "fact_topologies_output", default_value = "./fact_topologies.json", value_hint=ValueHint::FilePath, help = "Output of bootloader required along with bootloader_proof.json to split proofs for Ethereum")]
-    pub fact_topologies_output: PathBuf,
-
     #[clap(
         long = "ignore_fact_topologies",
         help = "Option to ignore fact topologies, which will result in task outputs being written only to public memory page 0"
     )]
-    pub ignore_fact_topologies: bool,
+    pub ignore_fact_topologies: Option<bool>,
 
     #[structopt(long = "allow_missing_builtins")]
     pub allow_missing_builtins: Option<bool>,
@@ -69,7 +66,7 @@ pub fn run_bootloader(args: RunBootloaderArgs) -> Result<(), Error> {
             supported_cairo_verifier_program_hashes: vec![],
         },
         packed_outputs: vec![PackedOutput::Plain(vec![]); n_tasks],
-        ignore_fact_topologies: args.ignore_fact_topologies,
+        ignore_fact_topologies: args.ignore_fact_topologies.unwrap_or(false),
     };
 
     let mut exec_scopes = ExecutionScopes::new();
