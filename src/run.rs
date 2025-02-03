@@ -1,11 +1,7 @@
 use std::path::PathBuf;
 
-use cairo_vm::{
-    cairo_run,
-    cairo_run::cairo_run_program_with_initial_scope,
-    types::{exec_scope::ExecutionScopes, layout_name::LayoutName},
-    Felt252,
-};
+pub use cairo_vm::types::layout_name::LayoutName;
+use cairo_vm::{cairo_run, cairo_run::cairo_run_program_with_initial_scope, types::exec_scope::ExecutionScopes, Felt252};
 use clap::{Parser, ValueHint};
 use tracing::debug;
 
@@ -26,10 +22,10 @@ pub struct RunBootloaderArgs {
     pub layout: LayoutName,
 
     #[structopt(long = "secure_run")]
-    secure_run: Option<bool>,
+    pub secure_run: Option<bool>,
 
     #[clap(long = "cairo_pie_output")]
-    cairo_pie_output: Option<PathBuf>,
+    pub cairo_pie_output: Option<PathBuf>,
 
     #[clap(long = "fact_topologies_output", default_value = "./fact_topologies.json", value_hint=ValueHint::FilePath, help = "Output of bootloader required along with bootloader_proof.json to split proofs for Ethereum")]
     pub fact_topologies_output: PathBuf,
@@ -41,7 +37,7 @@ pub struct RunBootloaderArgs {
     pub ignore_fact_topologies: bool,
 
     #[structopt(long = "allow_missing_builtins")]
-    allow_missing_builtins: Option<bool>,
+    pub allow_missing_builtins: Option<bool>,
 }
 
 pub fn run_bootloader(args: RunBootloaderArgs) -> Result<(), Error> {
