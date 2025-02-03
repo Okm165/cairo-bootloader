@@ -390,7 +390,7 @@ pub fn get_task_fact_topology(
             }
         };
 
-        get_fact_topology_from_additional_data(output_size, additional_data)
+        get_fact_topology_from_additional_data(output_size, &additional_data)
     } else {
         Err(FactTopologyError::Internal("Unexpected task type".to_string().into_boxed_str()))
     }
@@ -513,9 +513,8 @@ mod tests {
             offset: 10,
         };
 
-        let result = configure_fact_topologies(&fact_topologies, &mut output_start, &mut output_builtin, true)
+        configure_fact_topologies(&fact_topologies, &mut output_start, &mut output_builtin, true)
             .expect("Configuring fact topologies failed unexpectedly");
-        assert_eq!(result, ());
 
         let output_builtin_state = output_builtin.get_state();
         assert_eq!(output_builtin_state.base, 0);
@@ -537,10 +536,8 @@ mod tests {
             offset: 10,
         };
 
-        let result = configure_fact_topologies(&fact_topologies, &mut output_start, &mut output_builtin, false)
+        configure_fact_topologies(&fact_topologies, &mut output_start, &mut output_builtin, false)
             .expect("Configuring fact topologies failed unexpectedly");
-
-        assert_eq!(result, ());
 
         // We expect the offset to 2 + sum(page_sizes) for each fact topology
         let expected_offset: usize = fact_topologies.iter().flat_map(|ft| &ft.page_sizes).sum();
