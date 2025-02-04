@@ -657,7 +657,7 @@ mod tests {
     fn test_save_output_pointer() {
         let mut vm = vm!();
         define_segments!(vm, 2, [((1, 0), (0, 0))]);
-        let mut hint_ref = HintReference::new(0, 0, true, false);
+        let mut hint_ref = HintReference::new(0, 0, true, false, true);
         hint_ref.offset2 = OffsetValue::Value(2);
         let ids_data = HashMap::from([("output_ptr".to_string(), hint_ref)]);
 
