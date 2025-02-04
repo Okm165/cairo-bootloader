@@ -7,6 +7,7 @@ edition = "2021"
 clap = { version = "4.3.10", features = ["derive"] }
 cairo-vm = { git = "https://github.com/zksecurity/cairo-vm.git", features = [
     "extensive_hints",
+    "clap",
 ], rev = "ac8b81b79f65f5017fe0929bf4025be4a0e9c73c" }
 num-traits = "0.2.19"
 serde = { version = "1.0.202", features = ["derive"] }
