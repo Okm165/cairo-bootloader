@@ -1,7 +1,12 @@
 use std::path::PathBuf;
 
 pub use cairo_vm::types::layout_name::LayoutName;
-use cairo_vm::{cairo_run, cairo_run::cairo_run_program_with_initial_scope, types::exec_scope::ExecutionScopes, Felt252};
+use cairo_vm::{
+    cairo_run::{self, cairo_run_program_with_initial_scope},
+    types::exec_scope::ExecutionScopes,
+    vm::runners::cairo_runner::CairoRunner,
+    Felt252,
+};
 use clap::{Parser, ValueHint};
 use tracing::debug;
 
@@ -37,7 +42,7 @@ pub struct RunBootloaderArgs {
     pub allow_missing_builtins: Option<bool>,
 }
 
-pub fn run_bootloader(args: RunBootloaderArgs) -> Result<(), Error> {
+pub fn run_bootloader(args: RunBootloaderArgs) -> Result<CairoRunner, Error> {
     tracing_subscriber::fmt::init();
 
     // Init CairoRunConfig
@@ -86,5 +91,5 @@ pub fn run_bootloader(args: RunBootloaderArgs) -> Result<(), Error> {
             .write_zip_file(file_name)?
     }
 
-    Ok(())
+    Ok(cairo_runner)
 }
